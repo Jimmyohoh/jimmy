@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>매장 통합 관리</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#14202b;--bg:#eef1f4;--ac:#0f766e;--warn:#c2410c}
+body{font-family:'Noto Sans KR',system-ui,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:80px}
+.in{width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:10px;margin-top:4px;background:#fff;font-size:15px}
+.lb{display:block;font-size:13px;color:#475569;margin-bottom:10px}
+.card{background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;border-left:4px solid var(--c,#cbd5e1);text-align:left;width:100%;display:block}
+.chip{display:inline-block;font-size:12px;padding:2px 9px;border-radius:99px;background:#e2e8f0}
+.btn{background:var(--ac);color:#fff;border-radius:10px;padding:11px;font-weight:700;width:100%;margin-top:6px}
+.btn.s{background:#e2e8f0;color:var(--ink)}.btn.d{background:#fee2e2;color:#b91c1c}
+.ov{position:fixed;inset:0;background:#0008;display:flex;align-items:flex-end;z-index:50}
+.pnl{background:#fff;width:100%;max-height:88vh;overflow:auto;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+.fab{position:fixed;right:16px;bottom:84px;width:54px;height:54px;border-radius:50%;background:var(--ac);color:#fff;font-size:28px;box-shadow:0 4px 14px #0004;z-index:20}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #d5dbe1;display:flex;overflow-x:auto;padding-bottom:env(safe-area-inset-bottom);z-index:30}
+nav button{flex:1 0 auto;min-width:62px;padding:8px 4px;font-size:11px;color:#64748b}
+nav button.on{color:var(--ac);font-weight:700}nav span{display:block;font-size:20px}
+.seg button{flex:1;padding:8px;border-radius:9px;font-size:14px;background:#dde3e8}.seg button.on{background:var(--ink);color:#fff}
+table{border-collapse:collapse;font-size:12px}td,th{border:1px solid #e2e8f0;padding:5px 6px;text-align:center;white-space:nowrap}
+td:first-child,th:first-child{position:sticky;left:0;background:#fff;text-align:left}
+.th{display:block;width:100%;max-width:100%;height:160px;object-fit:cover;border-radius:10px;background:#e2e8f0;cursor:zoom-in;margin-top:2px}
+.throw{display:flex;flex-direction:column;gap:8px}
+@media(min-width:640px){.throw{flex-direction:row}.throw>.th{width:180px;height:160px;flex:none}}
+.btn[disabled]{opacity:.35}
+#v{max-width:720px;margin:0 auto}
+</style>
+</head>
+<body>
+<header class="sticky top-0 z-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 py-3" style="padding-top:calc(.75rem + env(safe-area-inset-top))">
+  <h1 id="ttl" class="font-bold text-lg"></h1>
+  <button id="adm" onclick="logout()" class="chip"></button>
+</header>
+<main id="v" class="p-3"></main>
+<nav id="nav"></nav>
+<div id="sh"></div>
+<div id="lg"></div>
+<div id="toast" class="fixed left-1/2 -translate-x-1/2 bottom-24 bg-slate-900 text-white text-sm px-4 py-2 rounded-full hidden z-[60]"></div>
+
+<script>
+/* ===== 설정: 배포한 Apps Script 웹 앱 URL을 넣으세요. 비워두면 브라우저 저장소 기반 데모 모드(아이디 admin / 비밀번호 1234) ===== */
+const API = '';
+const LOGO = 'data:image/jpeg;base64,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';
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ymd = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+const today = ymd(new Date());
+const DOW = ['일','월','화','수','목','금','토'];
+const MC = ['조리','CS','마감','POS','기타'];
+const ADM = new Set(['Manual','Staff','Schedule','Category','Attendance']);
+const F = {
+  Work:[['date','날짜','date'],['cat','항목','select',['시설','CS','운영','재고','공지사항']],['author','작성자','text'],['content','내용','textarea'],['image','사진','file'],['status','구분','select',['미완료','공유','완료']],['note','비고','text']],
+  Meal:[['date','날짜','date'],['menu','메뉴','text'],['owner','담당자','text'],['note','비고','text'],['image','사진','file']],
+  Lost:[['date','날짜','date'],['author','작성자','text'],['content','내용','textarea'],['image','사진','file']],
+  Discount:[['date','날짜','date'],['name','이름','text'],['dept','부서','text'],['amount','할인 금액(원)','number'],['note','비고','text']],
+  Manual:[['cat','카테고리','select',() => catList()],['title','제목','text'],['content','내용','textarea'],['image','사진','file']],
+  Staff:[['role','직책','select',['점장','매니저','알바']],['name','이름','text'],['position','포지션','text'],['daeHyu','대휴 잔여(일)','number'],['daeHyuUsed','대휴 사용 날짜','date'],['hcIssue','보건증 발급일','date'],['hcExpire','보건증 만료일','date'],['wage','시급(원)','number']],
+  Attendance:[['date','날짜','date'],['name','이름','text'],['tin','출근','time'],['bs','휴게 시작','time'],['be','휴게 종료','time'],['tout','퇴근','time']],
+  Schedule:[['start','출근','time'],['end','퇴근','time']],
+  Reservation:[['date','날짜','date'],['content','예약 내용','text']]
+};
+
+let D = {}, tab = 'work', U = JSON.parse(localStorage.user || 'null'), admin = false, me = '';
+let mcat = '전체', smode = 'me', wk = 0, cal = new Date(); cal.setDate(1);
+
+/* ===== 데이터 계층 (GAS 또는 데모) ===== */
+let DB = JSON.parse(localStorage.demo || 'null');
+function seed() {
+  const mon = monday(0), d = i => { const x = new Date(mon); x.setDate(x.getDate()+i); return ymd(x); };
+  const exp = new Date(); exp.setDate(exp.getDate()+12);
+  return {
+    Manual:[{id:'m1',cat:'마감',title:'마감 체크리스트',content:'1. 주방 청소\n2. 재고 확인\n3. 포스 정산',image:''}],
+    Work:[{id:'w1',date:today,cat:'공지사항',author:'점장',content:'이번 주 금요일 위생 점검이 있습니다.',status:'공유',note:''},{id:'w2',date:today,cat:'시설',author:'민수',content:'냉장고 2번 소음 발생',status:'미완료',note:'기사 방문 요청'}],
+    Staff:[{id:'s1',role:'알바',name:'민수',position:'홀',daeHyu:'1',daeHyuUsed:'',hcIssue:'2025-10-30',hcExpire:ymd(exp),wage:'10320'},{id:'s2',role:'매니저',name:'지연',position:'주방',daeHyu:'0',daeHyuUsed:'',hcIssue:'',hcExpire:'',wage:'10320'}],
+    Schedule:[{id:'c1',date:d(0),name:'민수',start:'09:00',end:'18:00'},{id:'c2',date:d(2),name:'민수',start:'12:00',end:'21:00'},{id:'c3',date:d(0),name:'지연',start:'08:00',end:'17:00'}],
+    Meal:[{id:'e1',date:today,menu:'김치볶음밥',owner:'지연',note:''}],
+    Lost:[{id:'l1',date:today,author:'민수',content:'검은색 우산',returned:''}],
+    Discount:[{id:'d1',date:today,name:'민수',dept:'직원',amount:'3000',note:''}],
+    Reservation:[{id:'r1',date:today,content:'회장님 외 18명'}]
+  };
+}
+async function api(act, p = {}) {
+  if (!API) {
+    DB = DB || seed();
+    if (!DB.Attendance) DB.Attendance = [];
+    if (!DB.Category) DB.Category = MC.map((n, i) => ({ id: 'c' + i, name: n }));
+    let r = { ok: true };
+    if (act === 'all') r = DB;
+    else if (act === 'login') { const u = { admin: { pw: '1234', name: '지연', role: 'admin' }, staff: { pw: '1234', name: '민수', role: 'staff' } }[p.username]; r = u && u.pw === p.password ? { ok: true, token: 'demo', user: { username: p.username, name: u.name, role: u.role } } : { ok: false, error: '아이디 또는 비밀번호가 틀립니다' }; }
+    else if (act === 'user') r = { ok: true };
+    else if (act === 'punch') {
+      const u = JSON.parse(localStorage.user), A = DB.Attendance, n = new Date(), t = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0');
+      const o = [...A].reverse().find(a => a.name === u.name && a.tin && !a.tout);
+      const e = p.type === 'in' ? (o && o.date === ymd(n) ? '이미 출근 상태입니다' : '') : !o ? '출근 기록이 없습니다' : p.type === 'bs' ? (o.bs ? '이미 휴게를 시작했습니다' : '') : p.type === 'be' ? (!o.bs || o.be ? '휴게 중이 아닙니다' : '') : (o.bs && !o.be ? '휴게 종료를 먼저 눌러주세요' : '');
+      if (e) r = { ok: false, error: e };
+      else { let row = o; if (p.type === 'in') { row = { id: 'a' + Date.now(), date: ymd(n), name: u.name, tin: t, tout: '', bs: '', be: '' }; A.push(row); } else row[{ bs: 'bs', be: 'be', out: 'tout' }[p.type]] = t; r = { ok: true, row, time: t }; }
+    }
+    else if (act === 'save') { const l = DB[p.sheet], i = l.findIndex(x => x.id == p.row.id); i < 0 ? l.push(p.row) : l[i] = p.row; r.row = p.row; }
+    else if (act === 'del') DB[p.sheet] = DB[p.sheet].filter(x => x.id != p.id);
+    localStorage.demo = JSON.stringify(DB);
+    return JSON.parse(JSON.stringify(r));
+  }
+  try {
+    const r = await (await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: act, token: localStorage.token || '', ...p }) })).json();
+    if (r.auth === false) logout('로그인이 만료되었습니다. 다시 로그인하세요.');
+    return r;
+  } catch (e) { return { ok: false, error: '네트워크 오류' }; }
+}
+async function save(s, row) {
+  row.id = row.id || Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  const r = await api('save', { sheet: s, row });
+  if (!r.ok) return toast(r.error || '저장 실패');
+  const l = D[s], i = l.findIndex(x => x.id == r.row.id); i < 0 ? l.push(r.row) : l[i] = r.row;
+  closeSh(); render(); toast('저장했습니다');
+}
+const catList = () => { const l = (D.Category || []).map(c => c.name); return l.length ? l : MC; };
+function setCat(i) { mcat = ['전체', ...catList()][i] || '전체'; render(); }
+function catMgr() {
+  const l = D.Category || [];
+  sheetUI(`<h3 class="font-bold mb-3">카테고리 관리</h3>${l.map(c => `<div class="card flex items-center justify-between" style="--c:var(--ac)"><span>${esc(c.name)} <span class="text-xs text-slate-500">(글 ${D.Manual.filter(m => m.cat === c.name).length}개)</span></span><button class="chip" style="background:#fee2e2;color:#b91c1c;padding:6px 12px" onclick="delCat('${c.id}')">삭제</button></div>`).join('') || '<p class="text-slate-500 mb-3">카테고리가 없습니다</p>'}<label class="lb mt-3">새 카테고리 이름<input id="cn" class="in" maxlength="20"></label><button class="btn" onclick="addCat()">추가</button><button class="btn s" onclick="closeSh()">닫기</button>`);
+}
+async function addCat() {
+  const name = $('#cn').value.trim();
+  if (!name) return toast('이름을 입력하세요');
+  if (catList().includes(name)) return toast('이미 있는 카테고리입니다');
+  if (!(D.Category || []).length) D.Category = MC.map((n, i) => ({ id: 'c' + i, name: n }));
+  await save('Category', { name });
+  catMgr();
+}
+async function delCat(id) {
+  const c = D.Category.find(x => x.id == id), used = D.Manual.filter(m => m.cat === c.name).length;
+  if (used) return toast(`'${c.name}' 글이 ${used}개 있어 삭제할 수 없습니다. 글의 카테고리를 먼저 바꾸세요.`);
+  await doDel('Category', id);
+  if (mcat === c.name) mcat = '전체';
+  render(); catMgr();
+}
+function del(s, id) {
+  sheetUI(`<h3 class="font-bold mb-1">이 글을 삭제할까요?</h3><p class="text-sm text-slate-500 mb-3">삭제하면 되돌릴 수 없습니다.</p><button class="btn d" onclick="doDel('${s}','${id}')">삭제</button><button class="btn s" onclick="closeSh()">취소</button>`);
+}
+async function doDel(s, id) {
+  const r = await api('del', { sheet: s, id });
+  if (!r.ok) return toast(r.error || '삭제 실패');
+  D[s] = D[s].filter(x => x.id != id); closeSh(); render(); toast('삭제했습니다');
+}
+
+/* ===== UI 도우미 ===== */
+function toast(t) { const e = $('#toast'); e.textContent = t; e.classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.add('hidden'), 3500); }
+function sheetUI(h) { $('#sh').innerHTML = `<div class="ov" onclick="closeSh()"><div class="pnl" onclick="event.stopPropagation()">${h}</div></div>`; }
+function closeSh() { $('#sh').innerHTML = ''; }
+const canEdit = s => !ADM.has(s) || admin;
+const OWN = { Work: 'author', Lost: 'author', Meal: 'owner' };
+const canDel = (s, r) => admin || (OWN[s] && r[OWN[s]] === me);
+function compress(file) {
+  return new Promise(res => {
+    const i = new Image();
+    i.onerror = () => { toast('사진을 읽을 수 없습니다'); res(''); };
+    i.onload = () => {
+      let k = Math.min(1, 1024 / Math.max(i.width, i.height)), q = .8;
+      const draw = () => { const c = document.createElement('canvas'); c.width = Math.round(i.width * k); c.height = Math.round(i.height * k); c.getContext('2d').drawImage(i, 0, 0, c.width, c.height); return c; };
+      let c = draw(), out = c.toDataURL('image/jpeg', q);
+      while (out.length * .75 > 300000 && q > .6) { q -= .05; out = c.toDataURL('image/jpeg', q); }
+      while (out.length * .75 > 300000 && k > .4) { k *= .85; c = draw(); out = c.toDataURL('image/jpeg', .7); }
+      res(out);
+    };
+    i.src = URL.createObjectURL(file);
+  });
+}
+function showForm(s, fields, row, title, seedRow) {
+  const inputs = fields.map(([k, l, t, o]) => {
+    const v = esc(row[k] ?? (t === 'date' && k === 'date' ? today : ''));
+    let inp;
+    if (t === 'textarea') inp = `<textarea name="${k}" rows="4" class="in">${v}</textarea>`;
+    else if (t === 'select') inp = `<select name="${k}" class="in">${(typeof o === 'function' ? o() : o).map(x => `<option ${x == row[k] ? 'selected' : ''}>${x}</option>`).join('')}</select>`;
+    else if (t === 'file') inp = `<input type="file" accept="image/*" name="${k}" class="in">${row[k] ? '<div class="text-xs text-slate-500">새 사진을 고르면 교체됩니다</div>' : ''}`;
+    else inp = `<input type="${t}" name="${k}" value="${v}" class="in">`;
+    return `<label class="lb">${l}${inp}</label>`;
+  }).join('');
+  sheetUI(`<h3 class="font-bold mb-3">${title}</h3>${inputs}<button class="btn" id="sv">저장</button>${row.id && canDel(s, row) ? `<button class="btn d" onclick="del('${s}','${row.id}')">삭제</button>` : ''}<button class="btn s" onclick="closeSh()">닫기</button>`);
+  $('#sv').onclick = async () => {
+    const out = { ...row, ...(seedRow || {}) };
+    for (const [k, , t] of fields) {
+      const el = $('#sh').querySelector(`[name="${k}"]`);
+      if (t === 'file') { if (el.files[0]) out[k] = await compress(el.files[0]); }
+      else out[k] = el.value;
+    }
+    save(s, out);
+  };
+}
+function openF(s, id, def = {}) {
+  if (!canEdit(s)) return toast('관리자 전용입니다');
+  const row = id ? D[s].find(x => x.id == id) : { ...(F[s].some(f => f[0] === 'author') ? { author: me } : {}), ...def };
+  showForm(s, F[s], row, id ? '수정' : '새로 등록');
+}
+const fab = (s, def) => canEdit(s) ? `<button class="fab" onclick="openF('${s}',null)">+</button>` : '';
+const byDate = (a, b) => (b.date || '').localeCompare(a.date || '');
+const thumbUrl = u => String(u).replace(/sz=w\d+/, 'sz=w600');
+const thumb = (s, r) => r.image ? `<img src="${esc(thumbUrl(r.image))}" alt="첨부 사진" loading="lazy" class="th" onclick="event.stopPropagation();showImg('${s}','${r.id}')">` : '';
+function showImg(s, id) { const r = D[s].find(x => x.id == id); $('#sh').innerHTML = `<div class="ov" style="align-items:center;justify-content:center;background:#000d" onclick="closeSh()"><img src="${esc(r.image)}" alt="" style="max-width:96vw;max-height:88vh;object-fit:contain;border-radius:10px" onclick="event.stopPropagation()"><button onclick="closeSh()" style="position:fixed;top:calc(12px + env(safe-area-inset-top));right:14px;color:#fff;font-size:30px;line-height:1">✕</button></div>`; }
+const empty = t => `<p class="text-center text-slate-500 py-10">${t}</p>`;
+
+/* ===== 로그인 ===== */
+function showLogin(msg) {
+  $('#v').innerHTML = '';
+  $('#lg').innerHTML = `<div class="fixed inset-0 z-[80] flex items-center justify-center p-6" style="background:var(--bg)"><div class="w-full max-w-sm"><div class="text-center mb-4"><img src="${LOGO}" alt="" class="inline-block rounded-full object-cover" style="width:120px;height:120px;object-position:50% 25%;box-shadow:0 4px 14px #0003"></div><h1 class="text-2xl font-bold mb-1">매장 통합 관리</h1><p class="text-sm text-slate-500 mb-6">발급받은 아이디로 로그인하세요</p><label class="lb">아이디<input id="lu" class="in" autocomplete="username" autocapitalize="off"></label><label class="lb">비밀번호<input id="lp" type="password" class="in" autocomplete="current-password"></label><p id="le" class="text-sm text-red-700 mb-2">${msg || ''}</p><button class="btn" id="lb">로그인</button>${API ? '' : '<p class="text-xs text-slate-500 mt-4">데모: admin / 1234 (관리자), staff / 1234 (직원)</p>'}</div></div>`;
+  $('#lb').onclick = doLogin;
+  $('#lp').onkeydown = e => { if (e.key === 'Enter') doLogin(); };
+  $('#lu').onkeydown = e => { if (e.key === 'Enter') $('#lp').focus(); };
+}
+async function doLogin() {
+  const username = $('#lu').value.trim(), password = $('#lp').value;
+  if (!username || !password) return $('#le').textContent = '아이디와 비밀번호를 입력하세요';
+  $('#lb').disabled = true;
+  const r = await api('login', { username, password });
+  $('#lb').disabled = false;
+  if (!r.ok) return $('#le').textContent = r.error || '로그인 실패';
+  localStorage.token = r.token; localStorage.user = JSON.stringify(r.user); U = r.user;
+  startApp();
+}
+function logout(msg) {
+  localStorage.removeItem('token'); localStorage.removeItem('user');
+  U = null; admin = false; me = ''; D = {}; closeSh(); showLogin(typeof msg === 'string' ? msg : '');
+}
+async function startApp() {
+  admin = U.role === 'admin'; me = U.name; $('#lg').innerHTML = '';
+  $('#v').innerHTML = empty('불러오는 중…');
+  const d = await api('all');
+  if (!d.Work) { if (d.auth !== false) $('#v').innerHTML = empty(esc(d.error || '데이터를 불러오지 못했습니다. API 주소를 확인하세요.')); return; }
+  D = d; render();
+}
+function userForm() {
+  sheetUI(`<h3 class="font-bold mb-1">계정 추가 / 비밀번호 변경</h3><p class="text-xs text-slate-500 mb-3">이미 있는 아이디를 입력하면 비밀번호와 정보가 바뀝니다. 이름은 직원 목록의 이름과 똑같이 적어야 개인 스케줄이 연결됩니다.</p><label class="lb">아이디 (영문/숫자)<input id="au" class="in" autocapitalize="off"></label><label class="lb">비밀번호 (6자 이상)<input id="ap" class="in"></label><label class="lb">이름<input id="an" class="in"></label><label class="lb">권한<select id="ar" class="in"><option value="staff">직원</option><option value="admin">관리자</option></select></label><button class="btn" id="asv">저장</button><button class="btn s" onclick="closeSh()">닫기</button>`);
+  $('#asv').onclick = async () => {
+    const r = await api('user', { username: $('#au').value.trim(), password: $('#ap').value, name: $('#an').value.trim(), role: $('#ar').value });
+    if (r.ok) { closeSh(); toast('계정을 저장했습니다'); } else toast(r.error || '저장 실패');
+  };
+}
+
+/* ===== 화면 ===== */
+const V = {
+  manual() {
+    const cs = ['전체', ...catList()];
+    const list = D.Manual.filter(m => mcat === '전체' || m.cat === mcat);
+    return `<div class="flex gap-2 overflow-x-auto pb-2">${cs.map((c, i) => `<button class="chip ${c === mcat ? '!bg-slate-900 text-white' : ''}" style="padding:6px 14px;flex:none" onclick="setCat(${i})">${esc(c)}</button>`).join('')}${admin ? '<button class="chip" style="padding:6px 14px;flex:none;background:#fde68a" onclick="catMgr()">⚙ 카테고리 관리</button>' : ''}</div>`
+      + (list.map(m => `<div class="card" style="--c:var(--ac)" ${admin ? `onclick="openF('Manual','${m.id}')"` : ''}><span class="chip">${esc(m.cat)}</span><h3 class="font-bold text-base my-1">${esc(m.title)}</h3>${m.image ? `<img src="${esc(thumbUrl(m.image))}" alt="" loading="lazy" class="th my-2" style="height:180px" onclick="event.stopPropagation();showImg('Manual','${m.id}')">` : ''}<p class="whitespace-pre-line text-sm leading-relaxed">${esc(m.content)}</p></div>`).join('') || empty('등록된 매뉴얼이 없습니다')) + fab('Manual');
+  },
+  work() {
+    const all = [...D.Work].sort(byDate);
+    const pin = all.filter(r => r.cat === '공지사항').slice(0, 2), rest = all.filter(r => !pin.includes(r));
+    const col = { 미완료: '#c2410c', 공유: '#0369a1', 완료: '#15803d' };
+    const card = (r, p) => `<div class="card" style="--c:${p ? '#d97706' : col[r.status] || '#cbd5e1'};${p ? 'background:#fffbeb' : ''}" onclick="openF('Work','${r.id}')"><div class="throw"><div class="flex-1 min-w-0"><div class="flex justify-between items-center text-xs text-slate-500"><span>${r.date} · ${esc(r.author)}</span><button class="chip" style="background:${col[r.status] || '#e2e8f0'}22;color:${col[r.status]}" onclick="event.stopPropagation();cycle('${r.id}')">${esc(r.status)}</button></div><div class="mt-1"><span class="chip mr-1">${p ? '📌 ' : ''}${esc(r.cat)}</span>${esc(r.content)}</div>${r.note ? `<div class="text-xs text-slate-500 mt-1">비고: ${esc(r.note)}</div>` : ''}</div>${thumb('Work', r)}</div></div>`;
+    return pin.map(r => card(r, 1)).join('') + rest.map(r => card(r)).join('') + (all.length ? '' : empty('공유된 업무가 없습니다')) + fab('Work');
+  },
+  meal() { return D.Meal.sort(byDate).map(r => `<button class="card" style="--c:#0f766e" onclick="openF('Meal','${r.id}')"><div class="throw"><div class="flex-1 min-w-0"><div class="text-xs text-slate-500">${r.date} (${DOW[new Date(r.date + 'T00:00').getDay()]}) · 담당 ${esc(r.owner)}</div><div class="font-bold">${esc(r.menu)}</div>${r.note ? `<div class="text-xs text-slate-500">${esc(r.note)}</div>` : ''}</div>${thumb('Meal', r)}</div></button>`).join('') || empty('등록된 직원식이 없습니다') + '' ; },
+  lost() {
+    const l = [...D.Lost].sort((a, b) => (a.returned ? 1 : 0) - (b.returned ? 1 : 0) || byDate(a, b));
+    return l.map(r => `<div class="card" style="--c:${r.returned ? '#15803d' : '#c2410c'}"><div class="throw"><div class="flex items-center gap-3 flex-1 min-w-0"><input type="checkbox" class="w-6 h-6" ${r.returned ? 'checked' : ''} onchange="toggleLost('${r.id}')"><div class="flex-1" onclick="openF('Lost','${r.id}')"><div class="text-xs text-slate-500">${r.date} · ${esc(r.author)}</div><div class="${r.returned ? 'line-through text-slate-400' : ''}">${esc(r.content)}</div></div><span class="chip">${r.returned ? '반환 완료' : '미반환'}</span></div>${thumb('Lost', r)}</div></div>`).join('') || empty('등록된 분실물이 없습니다');
+  },
+  disc() {
+    const m = today.slice(0, 7), sum = D.Discount.filter(r => r.date.startsWith(m)).reduce((a, r) => a + +r.amount, 0);
+    return `<div class="card" style="--c:var(--ac)"><div class="text-xs text-slate-500">이번 달 할인 합계</div><div class="text-2xl font-bold">${sum.toLocaleString()}원</div></div>`
+      + [...D.Discount].sort(byDate).map(r => `<button class="card" onclick="openF('Discount','${r.id}')"><div class="flex justify-between"><b>${esc(r.name)} <span class="chip">${esc(r.dept)}</span></b><b>${(+r.amount).toLocaleString()}원</b></div><div class="text-xs text-slate-500">${r.date}${r.note ? ' · ' + esc(r.note) : ''}</div></button>`).join('') + fab('Discount');
+  },
+  resv() {
+    const y = cal.getFullYear(), m = cal.getMonth(), n = new Date(y, m + 1, 0).getDate();
+    let c = '<div></div>'.repeat(cal.getDay());
+    for (let d = 1; d <= n; d++) {
+      const ds = ymd(new Date(y, m, d)), rs = D.Reservation.filter(r => r.date === ds);
+      c += `<button onclick="dayView('${ds}')" class="h-[68px] rounded-lg p-1 text-left bg-white ${ds === today ? 'ring-2 ring-teal-600' : ''}"><div class="text-xs ${rs.length ? 'font-bold' : 'text-slate-500'}">${d}</div>${rs.length ? `<div class="text-[10px] leading-tight text-teal-800 line-clamp-2">${esc(rs[0].content)}</div>${rs.length > 1 ? `<div class="text-[10px]">+${rs.length - 1}</div>` : ''}` : ''}</button>`;
+    }
+    return `<div class="flex justify-between items-center mb-2"><button class="chip" style="padding:8px 14px" onclick="cal.setMonth(cal.getMonth()-1);render()">◀</button><b>${y}년 ${m + 1}월</b><button class="chip" style="padding:8px 14px" onclick="cal.setMonth(cal.getMonth()+1);render()">▶</button></div><div class="grid grid-cols-7 gap-1 text-center text-xs text-slate-500 mb-1">${DOW.map(d => `<div>${d}</div>`).join('')}</div><div class="grid grid-cols-7 gap-1">${c}</div>`;
+  },
+  sched() {
+    const seg = admin ? `<div class="seg flex gap-2 mb-3"><button class="${smode === 'me' ? 'on' : ''}" onclick="smode='me';render()">내 스케줄</button><button class="${smode === 'all' ? 'on' : ''}" onclick="smode='all';render()">전체 스케줄</button><button class="${smode === 'pay' ? 'on' : ''}" onclick="smode='pay';render()">근태·급여</button></div>` : '';
+    const mon = monday(wk), days = [...Array(7)].map((_, i) => { const x = new Date(mon); x.setDate(x.getDate() + i); return x; });
+    const nav = `<div class="flex justify-between items-center mb-3"><button class="chip" style="padding:8px 14px" onclick="wk--;render()">◀</button><b class="text-sm">${ymd(days[0]).slice(5)} ~ ${ymd(days[6]).slice(5)}${wk === 0 ? ' (이번 주)' : ''}</b><button class="chip" style="padding:8px 14px" onclick="wk++;render()">▶</button></div>`;
+    const shift = (n, d) => D.Schedule.find(s => s.name === n && s.date === d);
+    if (smode === 'pay' && admin) return seg + vPay();
+    if (smode === 'all' && admin) {
+      const rows = D.Staff.map(p => { let t = 0; const tds = days.map(d => { const s = shift(p.name, ymd(d)); if (s) t += hrs(s); return `<td onclick="editShift('${p.id}','${ymd(d)}')">${s ? s.start.slice(0, 5) + '<br>' + s.end.slice(0, 5) : '<span class="text-slate-300">+</span>'}</td>`; }).join(''); return `<tr><td onclick="openF('Staff','${p.id}')"><b>${esc(p.name)}</b><br><span class="text-slate-500">${esc(p.role)}·${esc(p.position)}</span></td>${tds}<td><b>${t}h</b></td></tr>`; }).join('');
+      return seg + nav + `<div class="overflow-x-auto bg-white rounded-xl"><table class="w-full"><tr><th>직원</th>${days.map(d => `<th>${d.getMonth() + 1}/${d.getDate()}<br>${DOW[d.getDay()]}</th>`).join('')}<th>합계</th></tr>${rows}</table></div><button class="btn mt-3" onclick="openF('Staff',null)">+ 직원 추가 (보건증·대휴 포함)</button><button class="btn s" onclick="userForm()">🔑 계정 추가 / 비밀번호 변경</button><p class="text-xs text-slate-500 mt-2">칸을 누르면 출퇴근 시간을 수정, 이름을 누르면 직원 정보를 수정합니다.</p>`;
+    }
+    const p = D.Staff.find(s => s.name === me);
+    const pick = !admin ? '' : `<select class="in" onchange="me=this.value;render()"><option value="">이름을 선택하세요</option>${D.Staff.map(s => `<option ${s.name === me ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select>`;
+    if (!p) return seg + pick + empty(admin ? '이름을 선택하면 이번 주 근무가 보입니다' : '내 이름(' + esc(me) + ')이 직원 목록에 없습니다. 관리자에게 문의하세요.');
+    const dd = p.hcExpire ? Math.ceil((new Date(p.hcExpire + 'T00:00') - new Date(today + 'T00:00')) / 864e5) : null;
+    const hc = dd === null ? '' : dd < 0 ? `<div class="card" style="--c:#b91c1c;background:#fef2f2">🩺 보건증이 ${-dd}일 전에 만료되었습니다. 갱신해 주세요.</div>` : dd <= 30 ? `<div class="card" style="--c:#d97706;background:#fffbeb">🩺 보건증 만료 <b>D-${dd}</b> (${p.hcExpire})</div>` : `<div class="card text-sm" style="--c:#15803d">🩺 보건증 만료일 ${p.hcExpire} (D-${dd})</div>`;
+    let tot = 0;
+    const cards = days.map(d => { const s = shift(me, ymd(d)); if (!s) return ''; const h = hrs(s); tot += h; return `<div class="card flex justify-between items-center" style="--c:${ymd(d) === today ? 'var(--ac)' : '#cbd5e1'}"><div><b>${d.getMonth() + 1}/${d.getDate()} (${DOW[d.getDay()]})</b><div class="text-xs text-slate-500">${esc(p.position)}</div></div><div class="text-right"><div class="font-bold">${s.start} ~ ${s.end}</div><div class="text-xs text-slate-500">${h}시간</div></div></div>`; }).join('');
+    return seg + pick + '<div class="h-3"></div>' + hc + attView(p) + nav + (cards || empty('이번 주 근무가 없습니다')) + `<div class="card" style="--c:var(--ink)"><b>주간 총 ${tot}시간</b><span class="text-xs text-slate-500 ml-2">대휴 잔여 ${esc(p.daeHyu || 0)}일${p.daeHyuUsed ? ' · 최근 사용 ' + p.daeHyuUsed : ''}</span></div>`;
+  }
+};
+V.meal = (f => () => f() + fab('Meal'))(V.meal);
+V.lost = (f => () => f() + fab('Lost'))(V.lost);
+V.resv = (f => () => f())(V.resv);
+
+const monday = off => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + off * 7); return d; };
+const hrs = s => { if (!s.start || !s.end) return 0; const [a, b] = s.start.split(':'), [c, d] = s.end.split(':'); let m = (+c * 60 + +d) - (+a * 60 + +b); if (m < 0) m += 1440; return Math.round(m / 6) / 10; };
+const mm = t => { const [h, m] = String(t).split(':'); return +h * 60 + +m; };
+const dur = (a, b) => (mm(b) - mm(a) + 1440) % 1440;
+const workMin = r => { if (!r.tin || !r.tout) return 0; let m = dur(r.tin, r.tout); if (r.bs) m -= dur(r.bs, r.be || r.tout); return Math.max(0, m); };
+const fmtH = m => `${Math.floor(m / 60)}시간 ${m % 60}분`;
+const won = n => Math.round(n).toLocaleString() + '원';
+const pay = (m, w) => Math.round(m / 60 * (+w || 0));
+let pm = today.slice(0, 7);
+function pmShift(d) { const [y, m] = pm.split('-'); pm = ymd(new Date(+y, +m - 1 + d, 1)).slice(0, 7); render(); }
+async function punch(t) {
+  const r = await api('punch', { type: t });
+  if (!r.ok) return toast(r.error || '처리 실패');
+  const l = D.Attendance, i = l.findIndex(x => x.id == r.row.id); i < 0 ? l.push(r.row) : l[i] = r.row;
+  render(); toast({ in: '출근', out: '퇴근', bs: '휴게 시작', be: '휴게 종료' }[t] + ' 처리되었습니다 (' + r.time + ')');
+}
+function attView(p) {
+  const own = p.name === U.name, mon = today.slice(0, 7), mine = D.Attendance.filter(a => a.name === p.name);
+  const open = [...mine].reverse().find(a => a.tin && !a.tout);
+  let h = '';
+  if (own) {
+    const st = !open ? '대기 중' : open.bs && !open.be ? `휴게 중 (${open.bs}~)` : `근무 중 (출근 ${open.tin})`;
+    const b = (t, l, on) => `<button class="btn" ${on ? '' : 'disabled'} onclick="punch('${t}')">${l}</button>`;
+    h += `<div class="card" style="--c:var(--ac)"><div class="flex justify-between items-center mb-2"><b>오늘 근태</b><span class="chip">${st}</span></div><div class="grid grid-cols-2 gap-2">${b('in', '출근', !open)}${b('bs', '휴게 시작', open && !open.bs)}${b('be', '휴게 종료', open && open.bs && !open.be)}${b('out', '퇴근', open && (!open.bs || open.be))}</div></div>`;
+  }
+  const recs = mine.filter(a => a.date.startsWith(mon) && a.tout).sort((a, b) => b.date.localeCompare(a.date) || b.tin.localeCompare(a.tin));
+  const min = recs.reduce((t, a) => t + workMin(a), 0), wage = +p.wage || 0;
+  return h + `<div class="card" style="--c:var(--ink)"><div class="text-xs text-slate-500">${+mon.slice(5)}월 근무 (${recs.length}일)</div><div class="flex justify-between items-end"><b class="text-lg">${fmtH(min)}</b><b class="text-lg" style="color:var(--ac)">${wage ? won(pay(min, wage)) : '시급 미등록'}</b></div><div class="text-xs text-slate-500 mt-1">${wage ? `시급 ${won(wage)} 기준 · 휴게시간 제외` : '관리자가 시급을 등록하면 예상 급여가 표시됩니다'}</div>${recs.slice(0, 8).map(a => `<div class="text-xs flex justify-between border-t border-slate-100 mt-2 pt-2"><span>${a.date.slice(5)} ${a.tin}~${a.tout}${a.bs ? ` (휴게 ${a.bs}~${a.be || '-'})` : ''}</span><span>${fmtH(workMin(a))}${wage ? ' · ' + won(pay(workMin(a), wage)) : ''}</span></div>`).join('')}</div>`;
+}
+function vPay() {
+  const rows = D.Staff.map(p => { const rc = D.Attendance.filter(a => a.name === p.name && a.date.startsWith(pm) && a.tout), min = rc.reduce((t, a) => t + workMin(a), 0); return { p, n: rc.length, min, pay: pay(min, p.wage) }; });
+  const T = rows.reduce((t, r) => t + r.pay, 0);
+  return `<div class="flex justify-between items-center mb-3"><button class="chip" style="padding:8px 14px" onclick="pmShift(-1)">◀</button><b>${pm.replace('-', '년 ')}월</b><button class="chip" style="padding:8px 14px" onclick="pmShift(1)">▶</button></div><div class="overflow-x-auto bg-white rounded-xl"><table class="w-full"><tr><th>직원</th><th>일수</th><th>근무시간</th><th>시급</th><th>예상 급여</th></tr>${rows.map(r => `<tr onclick="payDetail('${r.p.id}')"><td><b>${esc(r.p.name)}</b></td><td>${r.n}</td><td>${fmtH(r.min)}</td><td>${r.p.wage ? (+r.p.wage).toLocaleString() : '<span style="color:#b91c1c">미등록</span>'}</td><td><b>${won(r.pay)}</b></td></tr>`).join('')}<tr><td><b>합계</b></td><td></td><td></td><td></td><td><b>${won(T)}</b></td></tr></table></div><p class="text-xs text-slate-500 mt-2">직원 행을 누르면 출퇴근 기록을 확인·수정할 수 있습니다. 시급은 [전체 스케줄]에서 직원 이름을 눌러 입력합니다. 주휴수당, 연장·야간 가산, 세금·4대보험은 반영되지 않은 기본급 기준 금액입니다.</p>`;
+}
+function payDetail(sid) {
+  const p = D.Staff.find(x => x.id == sid);
+  const rc = D.Attendance.filter(a => a.name === p.name && a.date.startsWith(pm)).sort((a, b) => b.date.localeCompare(a.date) || b.tin.localeCompare(a.tin));
+  sheetUI(`<h3 class="font-bold mb-3">${esc(p.name)} · ${pm}</h3>${rc.map(a => `<button class="card" onclick="openF('Attendance','${a.id}')"><div class="flex justify-between"><b>${a.date.slice(5)} ${a.tin}~${a.tout || '근무 중'}</b><span>${a.tout ? fmtH(workMin(a)) : ''}</span></div><div class="text-xs text-slate-500">휴게 ${a.bs ? a.bs + '~' + (a.be || '-') : '없음'}${a.tout && p.wage ? ' · ' + won(pay(workMin(a), p.wage)) : ''}</div></button>`).join('') || '<p class="text-slate-500 mb-3">기록이 없습니다</p>'}<button class="btn" onclick="addAtt('${p.id}')">+ 기록 추가</button><button class="btn s" onclick="closeSh()">닫기</button>`);
+}
+function addAtt(sid) { const p = D.Staff.find(x => x.id == sid); showForm('Attendance', F.Attendance, { name: p.name, date: today }, '근태 추가'); }
+function cycle(id) { const r = D.Work.find(x => x.id == id), o = ['미완료', '공유', '완료']; save('Work', { ...r, status: o[(o.indexOf(r.status) + 1) % 3] }); }
+function toggleLost(id) { const r = D.Lost.find(x => x.id == id); save('Lost', { ...r, returned: r.returned ? '' : 'Y' }); }
+function editShift(sid, date) { const name = D.Staff.find(x => x.id == sid).name; const r = D.Schedule.find(s => s.name === name && s.date === date) || { name, date }; showForm('Schedule', F.Schedule, r, `${name} · ${date}`); }
+function dayView(ds) {
+  const rs = D.Reservation.filter(r => r.date === ds);
+  sheetUI(`<h3 class="font-bold mb-3">${ds} (${DOW[new Date(ds + 'T00:00').getDay()]})</h3>${rs.map(r => `<div class="card" style="--c:var(--ac)" onclick="openF('Reservation','${r.id}')">${esc(r.content)}</div>`).join('') || '<p class="text-slate-500 mb-3">예약이 없습니다</p>'}<button class="btn" onclick="showForm('Reservation',F.Reservation,{date:'${ds}'},'예약 등록')">+ 예약 추가</button><button class="btn s" onclick="closeSh()">닫기</button>`);
+}
+
+/* ===== 라우팅 ===== */
+const T = [['manual', '📖', '매뉴얼'], ['work', '📢', '업무공유'], ['sched', '📅', '스케줄'], ['meal', '🍱', '직원식'], ['lost', '📦', '분실물'], ['disc', '💳', '할인'], ['resv', '🗓️', '예약']];
+function render() {
+  $('#nav').innerHTML = T.map(([k, i, l]) => `<button class="${k === tab ? 'on' : ''}" onclick="tab='${k}';render();scrollTo(0,0)"><span>${i}</span>${l}</button>`).join('');
+  $('#ttl').textContent = T.find(t => t[0] === tab)[2];
+  $('#adm').textContent = (admin ? '관리자 ' : '') + U.name + ' · 로그아웃';
+  $('#v').innerHTML = V[tab]();
+}
+U ? startApp() : showLogin();
+</script>
+</body>
+</html>
