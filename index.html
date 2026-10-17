@@ -48,16 +48,20 @@ td:first-child,th:first-child{position:sticky;left:0;background:#fff;text-align:
   <button id="adm" onclick="logout()" class="chip">로그인</button>
 </header>
 
-<main id="v" class="p-3"></main>
-<nav id="nav"></nav>
+<main id="v" class="p-3">
+  <!-- 메인 콘텐츠 영역 -->
+</main>
+<nav id="nav">
+  <!-- 하단 탭 내비게이션 영역 -->
+</nav>
 <div id="sh"></div>
 <div id="lg"></div>
 <div id="toast" class="fixed left-1/2 -translate-x-1/2 bottom-24 bg-slate-900 text-white text-sm px-4 py-2 rounded-full hidden z-[60]"></div>
 
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbzZRy4B6_6Cnlm7X1oWqFJQ3A6ucfDfDrA_5ltnYu0KByOp9KnzoCRQnxBRsMJkW5lA/exec';
+const API = 'https://script.google.com/macros/s/AKfycbyjwMkZA5-e-DpdY9BOTEwAm32NACywkr8KPhjla0xjpF6Kn-JU0klDaLsVXB8e7LX1/exec';
 
-// ⚡ [핵심] 이미지 강렬 압축 함수 (Canvas API 활용)
+// ⚡ [핵심] 이미지 강렬 압축 함수 (Canvas API 활용, 가로 최대 800px, 화질 40%)
 function compressImage(file, callback) {
   const reader = new FileReader();
   reader.onload = function(e) {
@@ -66,18 +70,12 @@ function compressImage(file, callback) {
       const canvas = document.createElement('canvas');
       let width = img.width;
       let height = img.height;
-      const max_size = 800; // 최대 가로/세로 800px 제한
+      const max_size = 800;
 
       if (width > height) {
-        if (width > max_size) {
-          height *= max_size / width;
-          width = max_size;
-        }
+        if (width > max_size) { height *= max_size / width; width = max_size; }
       } else {
-        if (height > max_size) {
-          width *= max_size / height;
-          height = max_size;
-        }
+        if (height > max_size) { width *= max_size / height; height = max_size; }
       }
 
       canvas.width = width;
@@ -85,7 +83,6 @@ function compressImage(file, callback) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
 
-      // 화질 0.4 (40%)로 압축하여 경량화
       const dataUrl = canvas.toDataURL('image/jpeg', 0.4);
       callback(dataUrl);
     };
@@ -95,7 +92,8 @@ function compressImage(file, callback) {
 }
 
 window.onload = function() {
-  console.log("매장 통합 관리 시스템 초기화 완료");
+  console.log("매장 통합 관리 시스템 로드 완료");
+  // 필요한 초기화 및 렌더링 함수 호출부
 };
 </script>
 </body>
