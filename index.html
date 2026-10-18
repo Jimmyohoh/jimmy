@@ -128,10 +128,13 @@ async function api(act, p = {}) {
     return JSON.parse(JSON.stringify(r));
   }
   try {
-    const r = await (await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: act, token: localStorage.token || '', ...p }) })).json();
+    const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: act, token: localStorage.token || '', ...p }) });
+    const txt = await res.text();
+    let r;
+    try { r = JSON.parse(txt); } catch (e) { return { success: false, ok: false, error: '서버 응답이 올바르지 않습니다 (HTTP ' + res.status + '). Apps Script 배포가 "새 버전"인지, 액세스가 "모든 사용자"인지, API 주소가 /exec 로 끝나는지 확인하세요.' }; }
     if (r.auth === false) logout('로그인이 만료되었습니다. 다시 로그인하세요.');
     return r;
-  } catch (e) { return { ok: false, error: '네트워크 오류' }; }
+  } catch (e) { return { success: false, ok: false, error: '서버에 연결할 수 없습니다. 인터넷 연결과 index.html 의 API 주소(Apps Script 웹 앱 URL)를 확인하세요.' }; }
 }
 async function save(s, row) {
   row.id = row.id || Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
